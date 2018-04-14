@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `cdchunking` crate.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, cdchunking">
+
+    <title>cdchunking - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../rustdoc.css"
+          id="mainThemeStyle">
+    
+    <link rel="stylesheet" type="text/css" href="../dark.css">
+    <link rel="stylesheet" type="text/css" href="../light.css" id="themeStyle">
+    <script src="../storage.js"></script>
+    
+
+    
+    
+</head>
+<body class="rustdoc mod">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Crate cdchunking</p><div class="sidebar-elems"><div class="block items"><ul><li><a href="#structs">Structs</a></li><li><a href="#enums">Enums</a></li><li><a href="#traits">Traits</a></li></ul></div><p class='location'></p><script>window.sidebarCurrent = {name: 'cdchunking', ty: 'mod', relpath: '../'};</script></div>
+    </nav>
+
+    <div class="theme-picker">
+        <button id="theme-picker" aria-label="Pick another theme!">
+            <img src="../brush.svg" width="18" alt="Pick another theme!">
+        </button>
+        <div id="theme-choices"></div>
+    </div>
+    <script src="../theme.js"></script>
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content"><h1 class='fqn'><span class='in-band'>Crate <a class="mod" href=''>cdchunking</a></span><span class='out-of-band'><span id='render-detail'><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class='inner'>&#x2212;</span>]</a></span><a class='srclink' href='../src/cdchunking/lib.rs.html#1-668' title='goto source code'>[src]</a></span></h1><div class='docblock'><p>Content-Defined Chunking</p>
+<p>This crates provides a way to device a stream of bytes into chunks, using
+methods that choose the splitting point from the content itself. This means
+that adding or removing a few bytes in the stream would only change the
+chunks directly modified. This is different from just splitting every n
+bytes, because in that case every chunk is different unless the number of
+bytes changed is a multiple of n.</p>
+<p>Content-defined chunking is useful for data de-duplication. It is used in
+many backup software, and by the rsync data synchronization tool.</p>
+<p>This crate exposes both easy-to-use methods, implementing the standard
+<code>Iterator</code> trait to iterate on chunks in an input stream, and efficient
+zero-allocation methods that reuse an internal buffer.</p>
+<h1 id="using-this-crate" class="section-header"><a href="#using-this-crate">Using this crate</a></h1>
+<p>First, add a dependency on this crate by adding the following to your
+<code>Cargo.toml</code>:</p>
+<pre><code class="language-toml">cdchunking = 0.1
+</code></pre>
+<p>And your <code>lib.rs</code>:</p>
+
+<pre class="rust rust-example-rendered">
+<span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">cdchunking</span>;</pre>
+<p>Then create a <code>Chunker</code> object using a specific method, for example the ZPAQ
+algorithm:</p>
+
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">cdchunking</span>::{<span class="ident">Chunker</span>, <span class="ident">ZPAQ</span>};
+
+<span class="kw">let</span> <span class="ident">chunker</span> <span class="op">=</span> <span class="ident">Chunker</span>::<span class="ident">new</span>(<span class="ident">ZPAQ</span>::<span class="ident">new</span>(<span class="number">13</span>)); <span class="comment">// 13 bits = 8 KiB block average</span></pre>
+<p>There are multiple way to get chunks out of some input data.</p>
+<h3 id="from-an-in-memory-buffer-iterate-on-slices" class="section-header"><a href="#from-an-in-memory-buffer-iterate-on-slices">From an in-memory buffer: iterate on slices</a></h3>
+<p>If your whole input data is in memory at once, you can use the <code>slices()</code>
+method. It will return an iterator on slices of this buffer, allowing to
+handle those chunks with no additional allocation.</p>
+
+<pre class="rust rust-example-rendered">
+<span class="kw">for</span> <span class="ident">slice</span> <span class="kw">in</span> <span class="ident">chunker</span>.<span class="ident">slices</span>(<span class="ident">data</span>) {
+    <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="ident">slice</span>);
+}</pre>
+<h3 id="from-a-file-object-read-chunks-into-memory" class="section-header"><a href="#from-a-file-object-read-chunks-into-memory">From a file object: read chunks into memory</a></h3>
+<p>If you are reading from a file, or any object that implements <code>Read</code>, you
+can use <code>Chunker</code> to read whole chunks directly. Use the <code>whole_chunks()</code>
+method to get an iterator on chunks, read as new <code>Vec&lt;u8&gt;</code> objects.</p>
+
+<pre class="rust rust-example-rendered">
+<span class="kw">for</span> <span class="ident">chunk</span> <span class="kw">in</span> <span class="ident">chunker</span>.<span class="ident">whole_chunks</span>(<span class="ident">reader</span>) {
+    <span class="kw">let</span> <span class="ident">chunk</span> <span class="op">=</span> <span class="ident">chunk</span>.<span class="ident">expect</span>(<span class="string">&quot;Error reading from file&quot;</span>);
+    <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="ident">chunk</span>);
+}</pre>
+<p>You can also read all the chunks from the file and collect them in a <code>Vec</code>
+(of <code>Vec</code>s) using the <code>all_chunks()</code> method. It will take care of the IO
+errors for you, returning an error if any of the chunks failed to read.</p>
+
+<pre class="rust rust-example-rendered">
+<span class="kw">let</span> <span class="ident">chunks</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;&gt;</span> <span class="op">=</span> <span class="ident">chunker</span>.<span class="ident">all_chunks</span>(<span class="ident">reader</span>)
+    .<span class="ident">expect</span>(<span class="string">&quot;Error reading from file&quot;</span>);
+<span class="kw">for</span> <span class="ident">chunk</span> <span class="kw">in</span> <span class="ident">chunks</span> {
+    <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="ident">chunk</span>);
+}</pre>
+<h3 id="from-a-file-object-streaming-chunks-with-zero-allocation" class="section-header"><a href="#from-a-file-object-streaming-chunks-with-zero-allocation">From a file object: streaming chunks with zero allocation</a></h3>
+<p>If you are reading from a file to write to another, you might deem the
+allocation of intermediate <code>Vec</code> objects unnecessary. If you want, you can
+have <code>Chunker</code> provide you chunks data from the internal read buffer,
+without allocating anything else. In that case, note that a chunk might be
+split between multiple read operations. This method will work fine with any
+chunk sizes.</p>
+<p>Use the <code>stream()</code> method to do this. Note that because an internal buffer
+is reused, we cannot implement the <code>Iterator</code> trait, so you will have to use
+a while loop:</p>
+
+<pre class="rust rust-example-rendered">
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chunk_iterator</span> <span class="op">=</span> <span class="ident">chunker</span>.<span class="ident">stream</span>(<span class="ident">reader</span>);
+<span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">chunk</span>) <span class="op">=</span> <span class="ident">chunk_iterator</span>.<span class="ident">read</span>() {
+    <span class="kw">let</span> <span class="ident">chunk</span> <span class="op">=</span> <span class="ident">chunk</span>.<span class="ident">unwrap</span>();
+    <span class="kw">match</span> <span class="ident">chunk</span> {
+        <span class="ident">ChunkInput</span>::<span class="ident">Data</span>(<span class="ident">d</span>) <span class="op">=&gt;</span> {
+            <span class="macro">print</span><span class="macro">!</span>(<span class="string">&quot;{:?}, &quot;</span>, <span class="ident">d</span>);
+        }
+        <span class="ident">ChunkInput</span>::<span class="ident">End</span> <span class="op">=&gt;</span> <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot; end of chunk&quot;</span>),
+    }
+}</pre>
+</div><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.ChunkInfo.html"
+                                  title='struct cdchunking::ChunkInfo'>ChunkInfo</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.ChunkInfoStream.html"
+                                  title='struct cdchunking::ChunkInfoStream'>ChunkInfoStream</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.ChunkStream.html"
+                                  title='struct cdchunking::ChunkStream'>ChunkStream</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.Chunker.html"
+                                  title='struct cdchunking::Chunker'>Chunker</a></td>
+                           <td class='docblock-short'>
+                                <p>Chunker object, wraps the rolling hash into a stream-splitting object.</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.SizeLimited.html"
+                                  title='struct cdchunking::SizeLimited'>SizeLimited</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.Slices.html"
+                                  title='struct cdchunking::Slices'>Slices</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.WholeChunks.html"
+                                  title='struct cdchunking::WholeChunks'>WholeChunks</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.ZPAQ.html"
+                                  title='struct cdchunking::ZPAQ'>ZPAQ</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr></table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="enum" href="enum.ChunkInput.html"
+                                  title='enum cdchunking::ChunkInput'>ChunkInput</a></td>
+                           <td class='docblock-short'>
+                                <p>Objects returned from the ChunkStream iterator.</p>
+
+                           </td>
+                       </tr></table><h2 id='traits' class='section-header'><a href="#traits">Traits</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.ChunkerImpl.html"
+                                  title='trait cdchunking::ChunkerImpl'>ChunkerImpl</a></td>
+                           <td class='docblock-short'>
+                                <p>This class is the internal method of finding chunk boundaries.</p>
+
+                           </td>
+                       </tr></table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt><kbd>?</kbd></dt>
+                    <dd>Show this help dialog</dd>
+                    <dt><kbd>S</kbd></dt>
+                    <dd>Focus the search field</dd>
+                    <dt><kbd>↑</kbd></dt>
+                    <dd>Move up in search results</dd>
+                    <dt><kbd>↓</kbd></dt>
+                    <dd>Move down in search results</dd>
+                    <dt><kbd>↹</kbd></dt>
+                    <dd>Switch tab</dd>
+                    <dt><kbd>&#9166;</kbd></dt>
+                    <dd>Go to active search result</dd>
+                    <dt><kbd>+</kbd></dt>
+                    <dd>Expand all sections</dd>
+                    <dt><kbd>-</kbd></dt>
+                    <dd>Collapse all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "cdchunking";
+    </script>
+    <script src="../main.js"></script>
+    <script defer src="../search-index.js"></script>
+</body>
+</html>

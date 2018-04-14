@@ -1,0 +1,10 @@
+(function() {var implementors = {};
+implementors["cdchunking"] = [{text:"impl&lt;R:&nbsp;<a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/std/io/trait.Read.html\" title=\"trait std::io::Read\">Read</a>, I:&nbsp;<a class=\"trait\" href=\"cdchunking/trait.ChunkerImpl.html\" title=\"trait cdchunking::ChunkerImpl\">ChunkerImpl</a>&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/iter/iterator/trait.Iterator.html\" title=\"trait core::iter::iterator::Iterator\">Iterator</a> for <a class=\"struct\" href=\"cdchunking/struct.WholeChunks.html\" title=\"struct cdchunking::WholeChunks\">WholeChunks</a>&lt;R, I&gt;",synthetic:false,types:["cdchunking::WholeChunks"]},{text:"impl&lt;R:&nbsp;<a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/std/io/trait.Read.html\" title=\"trait std::io::Read\">Read</a>, I:&nbsp;<a class=\"trait\" href=\"cdchunking/trait.ChunkerImpl.html\" title=\"trait cdchunking::ChunkerImpl\">ChunkerImpl</a>&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/iter/iterator/trait.Iterator.html\" title=\"trait core::iter::iterator::Iterator\">Iterator</a> for <a class=\"struct\" href=\"cdchunking/struct.ChunkInfoStream.html\" title=\"struct cdchunking::ChunkInfoStream\">ChunkInfoStream</a>&lt;R, I&gt;",synthetic:false,types:["cdchunking::ChunkInfoStream"]},{text:"impl&lt;'a, I:&nbsp;<a class=\"trait\" href=\"cdchunking/trait.ChunkerImpl.html\" title=\"trait cdchunking::ChunkerImpl\">ChunkerImpl</a>&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/iter/iterator/trait.Iterator.html\" title=\"trait core::iter::iterator::Iterator\">Iterator</a> for <a class=\"struct\" href=\"cdchunking/struct.Slices.html\" title=\"struct cdchunking::Slices\">Slices</a>&lt;'a, I&gt;",synthetic:false,types:["cdchunking::Slices"]},];
+
+            if (window.register_implementors) {
+                window.register_implementors(implementors);
+            } else {
+                window.pending_implementors = implementors;
+            }
+        
+})()
